@@ -14,56 +14,100 @@
 #  }
 #
 class vsftpd (
-  $confdir                 = $::vsftpd::params::confdir,
-  $package_name            = $::vsftpd::params::package_name,
-  $service_name            = $::vsftpd::params::service_name,
-  $template                = 'vsftpd/vsftpd.conf.erb',
+  String             $confdir                 = $::vsftpd::params::confdir,
+  Array              $dbpkg_name              = $::vsftpd::params::dbpkg_name,
+  String             $package_name            = $::vsftpd::params::package_name,
+  String             $service_name            = $::vsftpd::params::service_name,
+  String             $pam_dir                 = $::vsftpd::params::pam_dir,
+  Optional[Array]    $user_list               = [],
+  Boolean            $virtualuser_enable      = false,
+  Optional[Hash]     $virtual_users           = {},
+  String             $virtualuser_file        = $::vsftpd::params::virtualuser_file,
+  String             $template                = 'vsftpd/vsftpd.conf.erb',
   # vsftpd.conf options
-  $anonymous_enable        = 'YES',
-  $local_enable            = 'YES',
-  $write_enable            = 'YES',
-  $local_umask             = '022',
-  $anon_upload_enable      = 'NO',
-  $anon_mkdir_write_enable = 'NO',
-  $dirmessage_enable       = 'YES',
-  $xferlog_enable          = 'YES',
-  $connect_from_port_20    = 'YES',
-  $chown_uploads           = 'NO',
-  $chown_username          = undef,
-  $xferlog_file            = '/var/log/vsftpd.log',
-  $xferlog_std_format      = 'YES',
-  $idle_session_timeout    = '600',
-  $data_connection_timeout = '120',
-  $nopriv_user             = undef,
-  $async_abor_enable       = 'NO',
-  $ascii_upload_enable     = 'NO',
-  $ascii_download_enable   = 'NO',
-  $ftpd_banner             = undef,
-  $chroot_local_user       = 'NO',
-  $chroot_list_enable      = 'NO',
-  $chroot_list_file        = '/etc/vsftpd/chroot_list',
-  $ls_recurse_enable       = 'NO',
-  $listen                  = 'YES',
-  $listen_port             = undef,
-  $pam_service_name        = 'vsftpd',
-  $userlist_enable         = 'YES',
-  $userlist_deny           = undef,
-  $tcp_wrappers            = 'YES',
-  $hide_file               = undef,
-  $hide_ids                = 'NO',
-  $setproctitle_enable     = 'NO',
-  $text_userdb_names       = 'NO',
-  $max_clients             = undef,
-  $max_per_ip              = undef,
-  $pasv_min_port           = undef,
-  $pasv_max_port           = undef,
-  $ftp_username            = undef,
-  $banner_file             = undef,
-  $allow_writeable_chroot  = undef,
-  $directives              = {},
+  Enum['YES', 'NO']  $anonymous_enable        = 'YES',
+  Enum['YES', 'NO']  $local_enable            = 'YES',
+  Enum['YES', 'NO']  $write_enable            = 'YES',
+  String             $local_umask             = '022',
+  Enum['YES', 'NO']  $anon_upload_enable      = 'NO',
+  Enum['YES', 'NO']  $anon_mkdir_write_enable = 'NO',
+  Enum['YES', 'NO']  $dirmessage_enable       = 'YES',
+  Enum['YES', 'NO']  $xferlog_enable          = 'YES',
+  Enum['YES', 'NO']  $connect_from_port_20    = 'YES',
+  Enum['YES', 'NO']  $chown_uploads           = 'NO',
+  Optional[String]   $chown_username          = undef,
+  String             $xferlog_file            = '/var/log/vsftpd.log',
+  Enum['YES', 'NO']  $xferlog_std_format      = 'YES',
+  String             $idle_session_timeout    = '600',
+  String             $data_connection_timeout = '120',
+  Optional[String]   $nopriv_user             = undef,
+  Enum['YES', 'NO']  $async_abor_enable       = 'NO',
+  Enum['YES', 'NO']  $ascii_upload_enable     = 'NO',
+  Enum['YES', 'NO']  $ascii_download_enable   = 'NO',
+  Optional[String]   $ftpd_banner             = undef,
+  Enum['YES', 'NO']  $chroot_local_user       = 'NO',
+  Enum['YES', 'NO']  $chroot_list_enable      = 'NO',
+  String             $chroot_list_file        = $::vsftpd::params::chroot_list_file,
+  Enum['YES', 'NO']  $ls_recurse_enable       = 'NO',
+  Enum['YES', 'NO']  $listen                  = 'YES',
+  Optional[Integer]  $listen_port             = undef,
+  Enum['YES', 'NO']  $userlist_enable         = 'YES',
+  Optional[Enum['YES','NO']] 
+                     $userlist_deny           = undef,
+  String             $userlist_file           = $::vsftpd::params::userlist_file,
+  Enum['YES', 'NO']  $tcp_wrappers            = 'YES',
+  Optional[String]   $hide_file               = undef,
+  Enum['YES', 'NO']  $hide_ids                = 'NO',
+  Enum['YES', 'NO']  $setproctitle_enable     = 'NO',
+  Enum['YES', 'NO']  $text_userdb_names       = 'NO',
+  Optional[Integer]  $max_clients             = undef,
+  Optional[Integer]  $max_per_ip              = undef,
+  Optional[Integer]  $pasv_min_port           = undef,
+  Optional[Integer]  $pasv_max_port           = undef,
+  Optional[String]   $ftp_username            = undef,
+  Optional[String]   $banner_file             = undef,
+  Optional[Enum['YES','NO']] 
+                     $allow_writeable_chroot  = undef,
+  Optional[Hash]     $directives              = {},
 ) inherits ::vsftpd::params {
-
+ 
   package { $package_name: ensure => installed }
+
+
+  if $virtualuser_enable {
+    package { $dbpkg_name: ensure => installed }
+
+    $pam_service_name = 'vsftpd_virtual'
+    $virtualuser_db = "$confdir/virtual_users.db"
+
+    file { "$pam_dir/vsftpd_virtual": 
+      ensure    => 'present',
+      content   => template('vsftpd/vsftpd_virtual.erb')
+    }
+
+    if !empty($virtual_users) {
+      file { $virtualuser_file :
+        ensure    => 'present',
+        mode      => '0600',
+        owner     => 'root',
+        group     => 'root',
+        content   => template('vsftpd/vuser_list.txt.erb'),
+        require   => Package[$dbpkg_name],
+        notify    => Exec["db_load_users"],
+      }
+
+      exec {"db_load_users":
+        require   => File[$virtualuser_file],
+        path    => [ "/bin/", "/sbin/" , "/usr/bin/", "/usr/sbin/" ],
+        command   => "db_load -T -t hash -f $virtualuser_file $virtualuser_db",
+        refreshonly => true,
+      }
+    }
+  } else {
+
+    $pam_service_name = 'vsftpd'
+
+  }
 
   service { $service_name:
     require   => Package[$package_name],
@@ -78,5 +122,14 @@ class vsftpd (
     notify  => Service[$service_name],
   }
 
+  if !empty($user_list) {
+    file { $userlist_file :
+      ensure    => 'present',
+      content   => template('vsftpd/user_list.erb'),
+      notify    => Service[$service_name]
+    }
+  }
+
+  
 }
 
