@@ -1,0 +1,49 @@
+{
+  "name": "puppet-vsftpd",
+  "version": "0.3.1",
+  "author": "Matthias Saou, Adam Brust",
+  "summary": "Module to install, configure and manage vsftpd",
+  "license": "Apache-2.0",
+  "source": "https://github.com/UCSD-ANF/puppet-vsftpd",
+  "project_page": "https://github.com/UCSD-ANF/puppet-vsftpd",
+  "issues_url": "https://github.com/UCSD-ANF/puppet-vsftpd/issues",
+  "description": "Module to install, configure and manage vsftpd",
+  "tags": [
+    "vsftpd"
+  ],
+  "dependencies": [
+    {
+      "name": "puppetlabs/stdlib",
+      "version_requirement": ">= 4.13.1 < 5.0.0"
+    }
+  ],
+  "requirements": [
+    {
+      "name": "puppet",
+      "version_requirement": ">=4.7.1 <6.0.0"
+    }
+  ],
+  "operatingsystem_support": [
+    {
+      "operatingsystem": "RedHat",
+      "operatingsystemrelease": [
+        "6",
+        "7"
+      ]
+    },
+    {
+      "operatingsystem": "CentOS",
+      "operatingsystemrelease": [
+        "6",
+        "7"
+      ]
+    },
+    {
+      "operatingsystem": "Ubuntu",
+      "operatingsystemrelease": [
+        "16.04",
+        "18.04"
+      ]
+    }
+  ]
+}

@@ -1,3 +1,11 @@
+2019-02-14 - 0.3.1
+* puppet-lint cleanup
+* Add spec tests
+* Fix Debian support for virtual users
+
+2019-02-02 - 0.3.0
+* Add support for virtual users using pam & Berkeley DB
+
 2014-02-24 - 0.2.1
 * Add allow_writeable_chroot directive (#8).
 

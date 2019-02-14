@@ -3,12 +3,16 @@
 class vsftpd::params {
 
   $confdir = $::osfamily ? {
-    'Ubuntu' => '/etc',
+    'Debian' => '/etc',
     default  => '/etc/vsftpd'
   }
 
+  $dbpkg_name = $::osfamily ? {
+    'Debian' => [ 'db4.2-util' ],
+    default  => [ 'db4-utils', 'db4' ]
+  }
+
   $chroot_list_file    = "$confdir/chroot_list"
-  $dbpkg_name          = [ 'db4-utils', 'db4' ]
   $package_name        = 'vsftpd'
   $pam_dir             = '/etc/pam.d'
   $service_name        = 'vsftpd'

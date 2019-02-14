@@ -3,7 +3,23 @@
 # Install, enable and configure a vsftpd FTP server instance.
 #
 # Parameters:
-#  see vsftpd.conf(5) for details about what the available parameters do.
+#  See vsftpd.conf(5) for details about what the available parameters do.
+# 
+#  For module specific params:
+#    [*confdir*]            - Configuration path for vsftpd.conf.
+#    [*dbpkg_name*]         - Array of packages required for Berkely DB to
+#                             support virtual users.
+#    [*package_name*]       - Package name.  Default is 'vsftpd'.
+#    [*pam_dir*]            - Path for pam config.  Default is '/etc/pam.d'
+#    [*template*]           - Path to include custom config template.
+#    [*user_list*]          - Array of users to populate the vsftpd.conf
+#                             'userlist_file'.
+#    [*virtualuser_enable*] - Boolean to enable/disable virtual users.
+#                             Default is 'false'.
+#    [*virtual_users*]      - Hash of users and passwords for virtual users.
+#                             See readme for example usage.
+#    [*virtualuser_file*]   - Path to virtualuser file.
+#
 # Sample Usage :
 #  include vsftpd
 #  class { 'vsftpd':
@@ -52,8 +68,8 @@ class vsftpd (
   Enum['YES', 'NO']  $listen                  = 'YES',
   Optional[Integer]  $listen_port             = undef,
   Enum['YES', 'NO']  $userlist_enable         = 'YES',
-  Optional[Enum['YES','NO']] 
-                     $userlist_deny           = undef,
+  Optional[Enum['YES','NO']]
+    $userlist_deny                            = undef,
   String             $userlist_file           = $::vsftpd::params::userlist_file,
   Enum['YES', 'NO']  $tcp_wrappers            = 'YES',
   Optional[String]   $hide_file               = undef,
@@ -66,11 +82,11 @@ class vsftpd (
   Optional[Integer]  $pasv_max_port           = undef,
   Optional[String]   $ftp_username            = undef,
   Optional[String]   $banner_file             = undef,
-  Optional[Enum['YES','NO']] 
-                     $allow_writeable_chroot  = undef,
+  Optional[Enum['YES','NO']]
+    $allow_writeable_chroot                   = undef,
   Optional[Hash]     $directives              = {},
 ) inherits ::vsftpd::params {
- 
+
   package { $package_name: ensure => installed }
 
 
@@ -78,28 +94,28 @@ class vsftpd (
     package { $dbpkg_name: ensure => installed }
 
     $pam_service_name = 'vsftpd_virtual'
-    $virtualuser_db = "$confdir/virtual_users.db"
+    $virtualuser_db = "${confdir}/virtual_users.db"
 
-    file { "$pam_dir/vsftpd_virtual": 
-      ensure    => 'present',
-      content   => template('vsftpd/vsftpd_virtual.erb')
+    file { "${pam_dir}/vsftpd_virtual":
+      ensure  => 'present',
+      content => template('vsftpd/vsftpd_virtual.erb')
     }
 
     if !empty($virtual_users) {
       file { $virtualuser_file :
-        ensure    => 'present',
-        mode      => '0600',
-        owner     => 'root',
-        group     => 'root',
-        content   => template('vsftpd/vuser_list.txt.erb'),
-        require   => Package[$dbpkg_name],
-        notify    => Exec["db_load_users"],
+        ensure  => 'present',
+        mode    => '0600',
+        owner   => 'root',
+        group   => 'root',
+        content => template('vsftpd/vuser_list.txt.erb'),
+        require => Package[$dbpkg_name],
+        notify  => Exec['db_load_users'],
       }
 
-      exec {"db_load_users":
-        require   => File[$virtualuser_file],
-        path    => [ "/bin/", "/sbin/" , "/usr/bin/", "/usr/sbin/" ],
-        command   => "db_load -T -t hash -f $virtualuser_file $virtualuser_db",
+      exec {'db_load_users':
+        require     => File[$virtualuser_file],
+        path        => [ '/bin/', '/sbin/' , '/usr/bin/', '/usr/sbin/' ],
+        command     => "db_load -T -t hash -f ${virtualuser_file} ${virtualuser_db}",
         refreshonly => true,
       }
     }
@@ -110,9 +126,9 @@ class vsftpd (
   }
 
   service { $service_name:
+    ensure    => running,
     require   => Package[$package_name],
     enable    => true,
-    ensure    => running,
     hasstatus => true,
   }
 
@@ -124,12 +140,11 @@ class vsftpd (
 
   if !empty($user_list) {
     file { $userlist_file :
-      ensure    => 'present',
-      content   => template('vsftpd/user_list.erb'),
-      notify    => Service[$service_name]
+      ensure  => 'present',
+      content => template('vsftpd/user_list.erb'),
+      notify  => Service[$service_name]
     }
   }
 
-  
 }
 
